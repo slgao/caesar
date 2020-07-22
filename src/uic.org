@@ -1,0 +1,97 @@
+# 2020
+# array([   0.,  133.,  135.,  211.,  212.,  213.,  221.,  224.,  227.,
+# 	       235.,  411.,  421.,  471., 1321., 2223.])
+
+# 2019
+# array([   0.,   21.,  112.,  113.,  132.,  135.,  211.,  212.,  213.,
+#         227.,  235.,  411.,  421.,  422.,  471., 1321., 1322., 2223.,
+#        2252., 2321.])
+
+# 2018-2019
+# array([   0.,   21.,  112.,  113.,  132.,  135.,  211.,  212.,  213.,
+#         221.,  224.,  227.,  233.,  235.,  236.,  411.,  421.,  422.,
+#         431.,  471., 1321., 1322., 2223., 2252., 2321., 2322.])
+*** UIC code unique values by last three years.
+    By querying all marked suspects by the analysts from UST02 runs in year 2018, 2019 and 2020, 
+    I have got all the unique UIC values as below: 
+
+    array([   0.,   21.,  112.,  113.,  132.,  133.,  135.,  211.,  212.,
+    213.,  221.,  224.,  227.,  233.,  235.,  236.,  411.,  421.,
+    422.,  431.,  471., 1321., 1322., 2223., 2252., 2321., 2322.])
+
+
+*** UIC Interpretation. 
+
+    The defects are associated with UIC code, which can be interpreted into human understandable defects.
+    To convert from UIC code to descriptive names like (HC) horizontal cracking and so on not only help us to better understand the 
+    defect type without losing much class information. More importantly, this can reduce the number of classes 
+    (multiple UIC codes correspond to one type of defect) need to be determined, which 
+    will facilitate the task.
+    
+**** UIC -----> Classification described by defects
+
+|  UIC | Description                                                   |             |
+|    0 |                                                               | [BEV][fn:1] |
+|   21 | not defined                                                   | [OTHER]     |
+|  112 | Horizontal cracking                                           | [HC][fn:2]  |
+|  132 | Horizontal cracking                                           | [HC]        |
+| 1321 | at the web-head fillet radius                                 | [HC]        |
+| 1322 | at the web-foot fillet radius                                 | [HC]        |
+|  112 | Horizontal cracking                                           | [HC]        |
+|  113 | Longitudinal vertical cracking                                | [VSH][fn:3] |
+|  133 | Longitudinal vertical cracking (piping)                       | [VSH]       |
+|  135 | Star-cracking of fishbolt holes                               | [BHC][fn:4] |
+|  211 | Progressive transverse cracking (kidney-shaped fatigue crack) | [TC][fn:5]  |
+
+|       212 | Horizontal cracking                                          | [HC]        |
+|       213 | Longitudinal vertical cracking                               | [VSH]       |
+|       221 | Surface defects                                              | [RCF][fn:6] |
+|       224 | Local batter of the running surface                          | [RCF]       |
+|       227 | Squat / Cracking and local depression of the running surface | [RCF]       |
+|       233 | Longitudinal vertical cracking (piping)                      | [VSH]       |
+|       235 | Cracking around holes other than fishbolt holes              | [BHC]       |
+|       236 | Diagonal cracking away from any hole                         | [BHC]       |
+|       411 | Transverse cracking of the profile                           | [TC]        |
+|       421 | Transverse cracking of the profile                           | [TC]        |
+|       422 | Horizontal cracking of the web                               | [HC]        |
+|       431 | Transverse cracking of the profile                           | [TC]        |
+|       471 | Transverse cracking of the rail head                         | [TC]        |
+|      2223 | Head checking / Fissuring / Scaling at the gauge corner      | [RCF]       |
+|      2252 | Repeated wheel burns                                         | [RCF]       |
+| 232[fn:7] | Horizontal cracking                                          |             |
+|      2321 | at the web-head fillet radius                                | [HC]        |
+|      2322 | at the web-foot fillet radius                                | [HC]        |
+
+**** Short conclusion
+
+The interpreted classes are as below.
+
+HC = {112, 132, 1321, 1322, 212, 422, 2321, 2322}
+
+TC = {211, 411, 421, 431, 471}
+
+RCF = {221, 227, 224, 2223, 2252}
+
+BHC = {135, 235, 236}
+
+BEV = {0}
+
+VSH = {113, 133, 213, 233}
+
+OTHER = {21[fn:8], ...[fn:9]}
+
+HC, TC, RCF, BHC, BEV ... (VSH ..)
+
+
+
+[fn:1]BEV :: loss of bottom echo (loss of coupling)
+[fn:2]HC :: horizontal crack
+[fn:3]VSH :: vertical crack, longitudinal, not so interested for now.
+[fn:4]BHC :: bolt hole crack
+[fn:5]TC :: transversal crack
+[fn:6]RCF :: rolling contact fatigue, includes squats.
+[fn:7]although 232 was not recorded, can also be added to the list as a class HC.
+[fn:8]UIC code 21 means the defect is not defined due to some reason will be classified as OTHER.
+[fn:9]Other rarely occured UIC code not in the list will be classified as OTHER.
+
+
