@@ -25,8 +25,8 @@ INPUT_SIZE   = 416
 NUM_CLASS    = len(utils.read_class_names(cfg.YOLO.CLASSES))
 CLASSES      = utils.read_class_names(cfg.YOLO.CLASSES)
 
-predicted_dir_path = '../mAP/predicted'
-ground_truth_dir_path = '../mAP/ground-truth'
+predicted_dir_path = '../data/predicted'
+ground_truth_dir_path = '../data/ground-truth'
 if os.path.exists(predicted_dir_path): shutil.rmtree(predicted_dir_path)
 if os.path.exists(ground_truth_dir_path): shutil.rmtree(ground_truth_dir_path)
 if os.path.exists(cfg.TEST.DECTECTED_IMAGE_PATH): shutil.rmtree(cfg.TEST.DECTECTED_IMAGE_PATH)
@@ -54,7 +54,7 @@ with open(cfg.TEST.ANNOT_PATH, 'r') as annotation_file:
         image_name = os.path.basename(image_path)
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        bbox_data_gt = np.array([list(map(int, box.split(','))) for box in annotation[1:]])
+        bbox_data_gt = np.array([list(map(float, box.split(','))) for box in annotation[1:]]).astype(int)
 
         if len(bbox_data_gt) == 0:
             bboxes_gt=[]

@@ -48,11 +48,11 @@ __C.TRAIN.EPOCHS              = 30
 # TEST options
 __C.TEST                      = edict()
 
-__C.TEST.ANNOT_PATH           = "./data/dataset/yymnist_test.txt"
+__C.TEST.ANNOT_PATH           = "../data/bscan_test.txt"
 __C.TEST.BATCH_SIZE           = 2
-__C.TEST.INPUT_SIZE           = 544
+__C.TEST.INPUT_SIZE           = 640
 __C.TEST.DATA_AUG             = False
-__C.TEST.DECTECTED_IMAGE_PATH = "./data/detection/"
+__C.TEST.DECTECTED_IMAGE_PATH = "../data/detection/"
 __C.TEST.SCORE_THRESHOLD      = 0.3
 __C.TEST.IOU_THRESHOLD        = 0.45
 
