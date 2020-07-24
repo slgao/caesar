@@ -68,7 +68,7 @@ if __name__ == "__main__":
             # ind = 9  # [5] with squats, [9] with BEV ? [2] too many figures.
             # runid = runid_lst[ind]  # [3] only 1 susp and obj
             # ipdb.set_trace()
-            for ind in range(2, len(runid_lst)):
+            for ind in range(len(runid_lst)):
                 if "df_dblock_lr" in locals():
                     del df_dblock_lr
                 plt.close('all')

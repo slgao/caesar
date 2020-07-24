@@ -24,6 +24,7 @@ flags = parser.parse_args()
 ID = flags.ID
 while(True):
     label_txt = "../data/bscan_train.txt"
+    # label_txt = "../data/bscan_train-class_RCF_0.txt"
     try:
         image_info = open(label_txt).readlines()[ID].split()
     except:

@@ -42,7 +42,7 @@ BHC_keys = [135, 235, 236]
 BEV_keys = [0]
 VSH_keys = [113, 133, 213, 233]
 classes = ["HC", "TC", "RCF", "BHC", "BEV", "VSH"]
-classes_ = ["RCF", "HC", "TC", "BHC", "BEV", "VSH"]
+classes_ = ["RCF", "HC", "TC", "BEV", "BHC", "VSH"]  # class name in .names
 class_keys_ls = [HC_keys, TC_keys, RCF_keys, BHC_keys, BEV_keys, VSH_keys]
 class_dict = {}
 for keys, cla in zip(class_keys_ls, classes):
@@ -1014,11 +1014,10 @@ def ut_echo_plot_2_rgb_array(
     )
     cla = class_dict.get(uic)
     class_id = class_ind_dict.get(cla)
-    if class_id == 0:
-        write_annotation(
-            kwargs.get("wf"), os.path.abspath(img_abspath), str(xmin), str(ymin),
-            str(xmax), str(ymax), class_id
-        )
+    write_annotation(
+        kwargs.get("wf"), os.path.abspath(img_abspath), str(xmin), str(ymin),
+        str(xmax), str(ymax), class_id
+    )
     # pdb.set_trace()
     plt.close()
     return kwargs
@@ -1048,6 +1047,12 @@ def plot_2_rgb_arrays(
     for i in range(table.shape[0]):
         if kwargs.get("type") == "susp":
             kwargs.update({"UIC": table["UIC"].iloc[i].astype(int)})
+            uic = kwargs.get("UIC")
+            cla = class_dict.get(uic)
+            class_id = class_ind_dict.get(cla)
+            if class_id != 4:
+                continue
+
         kwargs.update({
             "start_depth": table["StartDepth"].iloc[i],
             "end_depth": table["EndDepth"].iloc[i],
