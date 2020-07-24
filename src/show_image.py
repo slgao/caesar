@@ -23,8 +23,8 @@ parser.add_argument("--ID", type=int, default=0)
 flags = parser.parse_args()
 ID = flags.ID
 while(True):
-    # label_txt = "../data/bscan_train.txt"
-    label_txt = "../data/bscan_train-class_1_HC.txt"
+    label_txt = "../data/new_bscan_train.txt"
+    # label_txt = "../data/bscan_train-class_1_HC.txt"
     try:
         image_info = open(label_txt).readlines()[ID].split()
     except:
