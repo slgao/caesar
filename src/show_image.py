@@ -17,6 +17,7 @@ from PIL import Image
 import sys
 import pdb
 import argparse
+import pdb
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--ID", type=int, default=0)
@@ -32,6 +33,7 @@ while(True):
     
     image_path = image_info[0]
     image = cv2.imread(image_path)
+    pdb.set_trace()
     # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     for bbox in image_info[1:]:
         bbox = bbox.split(",")

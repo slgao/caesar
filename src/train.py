@@ -29,7 +29,7 @@ steps_per_epoch = len(trainset)
 global_steps = tf.Variable(1, trainable=False, dtype=tf.int64)
 warmup_steps = cfg.TRAIN.WARMUP_EPOCHS * steps_per_epoch
 total_steps = cfg.TRAIN.EPOCHS * steps_per_epoch
-input_tensor = tf.keras.layers.Input([640, 640, 3])
+input_tensor = tf.keras.layers.Input([416, 416, 3])
 conv_tensors = YOLOv3(input_tensor)
 
 output_tensors = []
