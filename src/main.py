@@ -25,13 +25,13 @@ if __name__ == "__main__":
     a_path = kwargs.get("annotate_txt_path")
     a_name = "bscan_" + kwargs.get("annotate_txt_name") + ".txt"
     f_abs = os.path.join(a_path, a_name)
-    if os.path.exists(f_abs):
-        os.remove(f_abs)
+    # if os.path.exists(f_abs):
+    #     os.remove(f_abs)
     for month in months:
         for day in days:
             channel = "Echo data"
             system = "Furis"
-            year = 2020
+            year = 2019
             key = 'date'
             side = 'L'
             query = True  # test if query set to False.
@@ -167,10 +167,19 @@ if __name__ == "__main__":
                                 #     cnt_type, **kwargs
                                 # )
                                 type = kwargs["type"] = "susp"  # obj
+                                # bsc.plot_2_rgb_arrays(
+                                #     df_echo, meas_bname,
+                                #     kwargs[f"{type}_table"], df_railh,
+                                #     cnt_type, **kwargs
+                                # )
+                                
+                                # the whole run.
                                 bsc.plot_2_rgb_arrays(
-                                    df_echo, kwargs[f"{type}_table"],
-                                    meas_bname, df_railh, cnt_type, **kwargs
+                                    df_echo, meas_bname,
+                                    None, df_railh,
+                                    cnt_type, **kwargs
                                 )
+                                
                                 # bsc.plot_echo_susp_at_cnt(
                                 #     df_echo, susp_table, meas_bname, df_railh,
                                 #     cnt_type, **kwargs

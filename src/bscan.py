@@ -31,7 +31,9 @@ stop = False
 cache_dir = os.path.join(r'c:\DATA\GDM', 'Furis')
 length = "Length"
 side_ = {1: 'L', 2: 'R'}
-cnt_len = 639  # 800, 2000, 100000
+comment_cnt_type = {"ExternalCount": "ExtCnt", "InternalCount": "IntCnt"}
+ut_cnt_type = {"ExternalCount": "cnt_ext", "InternalCount": "cnt_int"}
+cnt_len = 639  # 639
 ms = 3
 
 # dict of defect classes.
@@ -924,8 +926,6 @@ def ut_echo_plot_2_rgb_array(
         return kwargs
     if kwargs.get("length") > cnt_len / 4:
         return kwargs
-    comment_cnt_type = {"ExternalCount": "ExtCnt", "InternalCount": "IntCnt"}
-    ut_cnt_type = {"ExternalCount": "cnt_ext", "InternalCount": "cnt_int"}
     depth_colo = OrderedDict([("start_depth", 'r'), ("end_depth", 'g')])
     length_colo = {"length": 'r'}
     alpha_ = .6
@@ -1007,8 +1007,6 @@ def ut_echo_plot_2_rgb_array(
         img_abspath = os.path.join(img_path, fig_title)
         img.save(img_abspath)
 
-    # TODO: make images and write annotations to files.
-    # make_image()
     xmin, xmax, ymin, ymax = create_bbox(
         cnt, cnt_start, cnt_end, y_min, y_max, **kwargs
     )
@@ -1025,45 +1023,81 @@ def ut_echo_plot_2_rgb_array(
 
 def plot_2_rgb_arrays(
     ut_echo,
-    table,
     meas_name,
+    table=None,
     railheight=None,
     cnt_type="ExternalCount",
     **kwargs
 ):
-    kwargs.update({
-        "show_all": False,
-        "susp_img_path": "../img_src/susp_img",
-        "obj_img_path": "../img_src/obj_img",
-        "meas_bname": meas_name,
-        "meas_bname_subfolder": True,
-        "padding": 15,
-    })
-    a_path = kwargs.get("annotate_txt_path")
-    a_name = "bscan_" + kwargs.get("annotate_txt_name") + ".txt"
-    f_abs = os.path.join(a_path, a_name)
-    wf = open(f_abs, 'a+')
-    kwargs.update({"wf": wf})
-    for i in range(table.shape[0]):
-        if kwargs.get("type") == "susp":
-            kwargs.update({"UIC": table["UIC"].iloc[i].astype(int)})
-            uic = kwargs.get("UIC")
-            cla = class_dict.get(uic)
-            class_id = class_ind_dict.get(cla)
-            if class_id != 4:
-                continue
-
+    if table is not None:
         kwargs.update({
-            "start_depth": table["StartDepth"].iloc[i],
-            "end_depth": table["EndDepth"].iloc[i],
-            "length": table["Length"].loc[i],
+            "show_all": False,
+            "susp_img_path": "../img_src/susp_img",
+            "obj_img_path": "../img_src/obj_img",
+            "meas_bname": meas_name,
+            "meas_bname_subfolder": True,
+            "padding": 15,
         })
-        s = table["Side"].iloc[i]
-        side = side_[s]
-        kwargs = ut_echo_plot_2_rgb_array(
-            ut_echo, table[cnt_type].iloc[i], side, railheight, **kwargs
-        )
-    kwargs.get("wf").close()
+        a_path = kwargs.get("annotate_txt_path")
+        a_name = "bscan_" + kwargs.get("annotate_txt_name") + ".txt"
+        f_abs = os.path.join(a_path, a_name)
+        wf = open(f_abs, 'a+')
+        kwargs.update({"wf": wf})
+        for i in range(table.shape[0]):
+            if kwargs.get("type") == "susp":
+                kwargs.update({"UIC": table["UIC"].iloc[i].astype(int)})
+                uic = kwargs.get("UIC")
+                cla = class_dict.get(uic)
+                class_id = class_ind_dict.get(cla)
+                if class_id != 4:
+                    continue
+
+            kwargs.update({
+                "start_depth": table["StartDepth"].iloc[i],
+                "end_depth": table["EndDepth"].iloc[i],
+                "length": table["Length"].loc[i],
+            })
+            s = table["Side"].iloc[i]
+            side = side_[s]
+            kwargs = ut_echo_plot_2_rgb_array(
+                ut_echo, table[cnt_type].iloc[i], side, railheight, **kwargs
+            )
+        kwargs.get("wf").close()
+    # plot or save the whole run frame by frame.
+    else:
+        path = "../data"
+        name = f"bscan_{meas_name}.txt"
+        f_abs = os.path.join(path, name)
+        wf = open(f_abs, 'a+')
+        kwargs.update({"wf": wf})
+        kwargs.update({
+            "show_all": False,
+            "susp_img_path": "../img_src/susp_img",
+            "obj_img_path": "../img_src/obj_img",
+            "meas_bname": meas_name,
+            "meas_bname_subfolder": True,
+            "padding": 0,
+        })
+        kwargs.update({
+            "UIC": 0,
+            "start_depth": 0,
+            "end_depth": 0,
+            "length": 0,
+        })
+        # create table for the whole run.
+        ut_echo_lr = ut_split(ut_echo)
+        table = pd.DataFrame()
+        # test left side.
+        cnt_start = ut_echo_lr['L'][ut_cnt_type[cnt_type]].iloc[0]
+        cnt_end = ut_echo_lr['L'][ut_cnt_type[cnt_type]].iloc[-1]
+        table[cnt_type] = range(cnt_start, cnt_end, cnt_len)
+        side = 'L'
+        pdb.set_trace()
+        for i in range(table.shape[0]):
+            kwargs = ut_echo_plot_2_rgb_array(
+                ut_echo, table[cnt_type].iloc[i], side, railheight, **kwargs
+            )
+        kwargs.get("wf").close()
 
 
 def make_image(data, image_path):
