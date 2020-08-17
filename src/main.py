@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 # Turn interactive plotting off
 # plt.ioff()
 import numpy as np
-import pdb
+from datetime import date
 import argp
+# import pdb
 
 if __name__ == "__main__":
     flags = argp.parser.parse_args()
@@ -17,16 +18,22 @@ if __name__ == "__main__":
     get_uic = False
     uic = np.array([])
     kwargs = dict()
+    type = kwargs["type"] = "susp"  # obj
     kwargs.update({
-        "annotate": True,
-        "annotate_txt_name": anno_txt_name,  # "test"
-        "annotate_txt_path": "../data/",
+        # "annotate": True,
+        # "annotate_txt_name": anno_txt_name,  # "test"
+        # "annotate_txt_path": "../data/",
+        "type": type,
+        "csv_path": "../annotations/",
+        "csv_name": "annotations.csv",
     })
-    a_path = kwargs.get("annotate_txt_path")
-    a_name = "bscan_" + kwargs.get("annotate_txt_name") + ".txt"
-    f_abs = os.path.join(a_path, a_name)
-    # if os.path.exists(f_abs):
-    #     os.remove(f_abs)
+    csv_path = kwargs.get("csv_path")
+    csv_name = kwargs.get("csv_name")
+    csv_abs_path = os.path.join(csv_path, csv_name)
+    annotations_f = open(csv_abs_path, 'a+')
+    bsc.write_anno_header(annotations_f, type=kwargs.get("type"))
+    annotations_f.close()
+
     for month in months:
         for day in days:
             channel = "Echo data"
@@ -134,6 +141,10 @@ if __name__ == "__main__":
                     figsize=(18, 5.5)
                 )
                 kwargs.update({
+                    "meas_date": date(year, month, day),
+                    "meas_year": year,
+                    "susp_img_path": f"../annotations/susp_img/{year}",
+                    "obj_img_path": f"../annotations/obj_img/{year}",
                     "susp_table": susp_table,
                     "obj_table": obj_table
                 })
@@ -162,23 +173,24 @@ if __name__ == "__main__":
                     if num < num_limit:
                         if True:
                             if susp_table.size > 0:
-                                # bsc.plot_2_rgb_arrays(
-                                #     df_echo, susp_table, meas_bname, df_railh,
-                                #     cnt_type, **kwargs
-                                # )
-                                type = kwargs["type"] = "susp"  # obj
-                                # bsc.plot_2_rgb_arrays(
-                                #     df_echo, meas_bname,
-                                #     kwargs[f"{type}_table"], df_railh,
-                                #     cnt_type, **kwargs
-                                # )
-                                
-                                # the whole run.
+                                # check if the meas_bname folder exists.
+                                meas_bname_folder = bsc.get_meas_bname_folder(meas_bname, **kwargs)
+                                if os.path.isdir(meas_bname_folder):
+                                    print(f"folder {meas_bname_folder} already exists.")
+                                    continue
                                 bsc.plot_2_rgb_arrays(
                                     df_echo, meas_bname,
-                                    None, df_railh,
+                                    kwargs[f"{type}_table"], df_railh,
                                     cnt_type, **kwargs
                                 )
+                                
+                                # the whole run.
+                                # bsc.plot_2_rgb_arrays(
+                                #     df_echo, meas_bname,
+                                #     None, df_railh,
+                                #     cnt_type, **kwargs
+                                # )
+                                # --------------------------------
                                 
                                 # bsc.plot_echo_susp_at_cnt(
                                 #     df_echo, susp_table, meas_bname, df_railh,

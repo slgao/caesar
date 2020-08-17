@@ -16,6 +16,7 @@ import matplotlib.animation as animation
 from PIL import Image
 import pdb
 import time
+import csv
 # local
 from data_proc.ers import get_gdm_h5path
 from general.path import get_abs_of_file_subdir
@@ -31,6 +32,7 @@ stop = False
 cache_dir = os.path.join(r'c:\DATA\GDM', 'Furis')
 length = "Length"
 side_ = {1: 'L', 2: 'R'}
+side__ = {'L': 1, 'R': 2}
 comment_cnt_type = {"ExternalCount": "ExtCnt", "InternalCount": "IntCnt"}
 ut_cnt_type = {"ExternalCount": "cnt_ext", "InternalCount": "cnt_int"}
 cnt_len = 639  # 639
@@ -43,14 +45,17 @@ RCF_keys = [221, 227, 224, 2223, 2252]
 BHC_keys = [135, 235, 236]
 BEV_keys = [0]
 VSH_keys = [113, 133, 213, 233]
-classes = ["HC", "TC", "RCF", "BHC", "BEV", "VSH"]
-classes_ = ["RCF", "HC", "TC", "BEV", "BHC", "VSH"]  # class name in .names
-class_keys_ls = [HC_keys, TC_keys, RCF_keys, BHC_keys, BEV_keys, VSH_keys]
+OBJ_keys = []
+classes = ["RCF", "TC", "HC", "BEV", "BHC", "VSH",
+           "OBJ"]  # class name in .names
+class_keys_ls = [
+    RCF_keys, TC_keys, HC_keys, BEV_keys, BHC_keys, VSH_keys, OBJ_keys
+]
 class_dict = {}
 for keys, cla in zip(class_keys_ls, classes):
     class_dict.update(dict.fromkeys(keys, cla))
 
-class_ind_dict = dict(enumerate(classes_))
+class_ind_dict = dict(enumerate(classes))
 class_ind_dict = dict((v, k) for k, v in class_ind_dict.items())
 
 
@@ -202,19 +207,16 @@ def read_ut_conf(config_ut_fn):
     return ut_chans
 
 
-def mask_chans(
-    ut_echo,
-    ut_chans,
-    cnt_start,
-    cnt_end,
-    railheight=False,
-    cnt_type="ExternalCount"
-):
+def mask_chans(ut_echo,
+               ut_chans,
+               cnt_start,
+               cnt_end,
+               railheight=False,
+               cnt_type="ExternalCount"):
     ut_echo_cnt_type = {"ExternalCount": "cnt_ext", "InternalCount": "cnt_int"}
     cnt_t = ut_echo_cnt_type[cnt_type]
-    cond_ut = np.logical_and(
-        ut_echo[cnt_t] > cnt_start, ut_echo[cnt_t] < cnt_end
-    )
+    cond_ut = np.logical_and(ut_echo[cnt_t] > cnt_start,
+                             ut_echo[cnt_t] < cnt_end)
     ut_echo_cond = ut_echo[cond_ut]
     if not railheight:
         # classify different channels
@@ -236,28 +238,24 @@ def get_ut_config():
     return ut_chans
 
 
-def display_echo(
-    ax,
-    chan_conds,
-    ut_chans,
-    ut_echo_cond,
-    cnt_type="ExternalCount",
-    legend=True
-):
+def display_echo(ax,
+                 chan_conds,
+                 ut_chans,
+                 ut_echo_cond,
+                 cnt_type="ExternalCount",
+                 legend=True):
     ut_echo_cnt_type = {"ExternalCount": "cnt_ext", "InternalCount": "cnt_int"}
     cnt_t = ut_echo_cnt_type[cnt_type]
 
     for cn in chan_conds:
         c = chan_conds[cn]
         label = ut_chans.loc[cn]['ch_name']
-        ax.plot(
-            ut_echo_cond[cnt_t][c],
-            -ut_echo_cond['depth'][c].astype(float),
-            '.',
-            color=ut_chans.loc[cn]['color'],
-            label=label,
-            ms=ms
-        )
+        ax.plot(ut_echo_cond[cnt_t][c],
+                -ut_echo_cond['depth'][c].astype(float),
+                '.',
+                color=ut_chans.loc[cn]['color'],
+                label=label,
+                ms=ms)
         if legend:
             ax.legend(loc="upper right")
 
@@ -271,14 +269,12 @@ def display_railh(ax, ut_railh_cond, cnt_type="ExternalCount", legend=True):
     }
     cnt_t = ut_railh_cnt_type[cnt_type]
 
-    ax.plot(
-        ut_railh_cond[cnt_t],
-        -ut_railh_cond['depth'].astype(float),
-        '.',
-        color=color,
-        label=label,
-        ms=ms
-    )
+    ax.plot(ut_railh_cond[cnt_t],
+            -ut_railh_cond['depth'].astype(float),
+            '.',
+            color=color,
+            label=label,
+            ms=ms)
     if legend:
         ax.legend(loc="upper right")
 
@@ -312,9 +308,8 @@ def echo_data_viewer(ut_echo):
     fig.canvas.mpl_connect('key_press_event', press)
     while (1):
         cnt_end = cnt_start + cnt_len
-        chan_conds, ut_echo_cond = mask_chans(
-            ut_echo, ut_chans, cnt_start, cnt_end
-        )
+        chan_conds, ut_echo_cond = mask_chans(ut_echo, ut_chans, cnt_start,
+                                              cnt_end)
         # plot the depths with different colors
         # canvas = FigureCanvasAgg(fig)
         # fig.patch.set_visible(False)
@@ -353,14 +348,15 @@ def echo_data_viewer_new(ut_echo):
     ax = fig.gca()
     # fig, ax = plt.subplots(figsize=(25, 4))
     ani_ut = AniUT(ut_echo, ax)
-    animation.FuncAnimation(
-        fig, ani_ut.update, emitter, interval=10, blit=False
-    )
+    animation.FuncAnimation(fig,
+                            ani_ut.update,
+                            emitter,
+                            interval=10,
+                            blit=False)
     plt.show()
 
 
 class AniUT:
-
     def __init__(self, ut_echo, ax):
         self.ax = ax
         self.ut_echo = ut_echo
@@ -371,9 +367,8 @@ class AniUT:
         cnt_start = self.ut_echo['cnt_ext'].iloc[300]
         cnt_end = cnt_start + self.cnt_len
         ut_chans = get_ut_config()
-        chan_conds, ut_echo_cond = mask_chans(
-            self.ut_echo, ut_chans, cnt_start, cnt_end
-        )
+        chan_conds, ut_echo_cond = mask_chans(self.ut_echo, ut_chans,
+                                              cnt_start, cnt_end)
         # plot the depths with different colors
         # canvas = FigureCanvasAgg(fig)
         # fig.patch.set_visible(False)
@@ -383,13 +378,11 @@ class AniUT:
         for cn in chan_conds:
             c = chan_conds[cn]
             label = ut_chans.loc[cn]['ch_name']
-            pl, = self.ax.plot(
-                ut_echo_cond['cnt_ext'][c],
-                -ut_echo_cond['depth'][c].astype(float),
-                '.',
-                color=ut_chans.loc[cn]['color'],
-                label=label
-            )
+            pl, = self.ax.plot(ut_echo_cond['cnt_ext'][c],
+                               -ut_echo_cond['depth'][c].astype(float),
+                               '.',
+                               color=ut_chans.loc[cn]['color'],
+                               label=label)
             plts.append(pl)
         self.ax.set_xlim([cnt_start, cnt_end])
         return plts
@@ -400,9 +393,8 @@ class AniUT:
         cnt_start = self.ut_echo['cnt_ext'].iloc[300]
         cnt_end = cnt_start + self.cnt_len
         ut_chans = get_ut_config()
-        chan_conds, ut_echo_cond = mask_chans(
-            self.ut_echo, ut_chans, cnt_start, cnt_end
-        )
+        chan_conds, ut_echo_cond = mask_chans(self.ut_echo, ut_chans,
+                                              cnt_start, cnt_end)
         # plot the depths with different colors
         # canvas = FigureCanvasAgg(fig)
         # fig.patch.set_visible(False)
@@ -412,13 +404,11 @@ class AniUT:
         for cn in chan_conds:
             c = chan_conds[cn]
             label = ut_chans.loc[cn]['ch_name']
-            pl, = self.ax.plot(
-                ut_echo_cond['cnt_ext'][c],
-                -ut_echo_cond['depth'][c].astype(float),
-                '.',
-                color=ut_chans.loc[cn]['color'],
-                label=label
-            )
+            pl, = self.ax.plot(ut_echo_cond['cnt_ext'][c],
+                               -ut_echo_cond['depth'][c].astype(float),
+                               '.',
+                               color=ut_chans.loc[cn]['color'],
+                               label=label)
             plts.append(pl)
         self.ax.set_xlim([cnt_start, cnt_end])
         return plts
@@ -440,15 +430,13 @@ def emitter():
         cnt_start += cnt_shift
 
 
-def plot_echo_at_cnt(
-    ut_echo,
-    cnt,
-    side,
-    comment="",
-    railheight=None,
-    cnt_type="ExternalCount",
-    **kwargs
-):
+def plot_echo_at_cnt(ut_echo,
+                     cnt,
+                     side,
+                     comment="",
+                     railheight=None,
+                     cnt_type="ExternalCount",
+                     **kwargs):
     cnt_key = "cnts"
     lengths_key = "lengths"
     sides_key = "sides"
@@ -471,9 +459,11 @@ def plot_echo_at_cnt(
         num_axes = 2
         fig_size = (18, 5.5)
     fig_title = f"{comment}_{comment_cnt_type[cnt_type]}_{cnt}"
-    fig, axs = plt.subplots(
-        num_axes, 1, num=fig_title, figsize=fig_size, sharex="all"
-    )
+    fig, axs = plt.subplots(num_axes,
+                            1,
+                            num=fig_title,
+                            figsize=fig_size,
+                            sharex="all")
     axs_ = {'L': axs[0], 'R': axs[1]}
     depth_colo = OrderedDict([("start_depth", 'r'), ("end_depth", 'g')])
     length_colo = {"length": 'r'}
@@ -484,14 +474,12 @@ def plot_echo_at_cnt(
     if railheight is not None:
         ut_railh_lr = ut_split(railheight)
     for k, echo in ut_echo_lr.items():
-        chan_conds, ut_echo_cond = mask_chans(
-            echo, ut_chans, cnt_start, cnt_end, False, cnt_type
-        )
+        chan_conds, ut_echo_cond = mask_chans(echo, ut_chans, cnt_start,
+                                              cnt_end, False, cnt_type)
         # mask rail height data.
         if railheight is not None:
-            _, ut_railh_cond = mask_chans(
-                ut_railh_lr[k], ut_chans, cnt_start, cnt_end, True, cnt_type
-            )
+            _, ut_railh_cond = mask_chans(ut_railh_lr[k], ut_chans, cnt_start,
+                                          cnt_end, True, cnt_type)
             display_railh(axs_[k], ut_railh_cond, cnt_type)
 
         display_echo(axs_[k], chan_conds, ut_chans, ut_echo_cond, cnt_type)
@@ -499,41 +487,38 @@ def plot_echo_at_cnt(
         if side == k:  # show only the side interested.
             for d_k in depth_colo.keys():
                 if d_k in kwargs:
-                    axs_[k].axhline(
-                        y=-kwargs[d_k],
-                        ls='-.',
-                        linewidth=1,
-                        color=depth_colo[d_k],
-                        alpha=alpha_
-                    )
+                    axs_[k].axhline(y=-kwargs[d_k],
+                                    ls='-.',
+                                    linewidth=1,
+                                    color=depth_colo[d_k],
+                                    alpha=alpha_)
                     comment_p_ += f"_[{d_k}:{-kwargs[d_k]}]_"
             if comment_p_:
                 comment_p = comment + comment_p_
             # plot length.
             len_key = list(length_colo.keys())[0]
             if len_key in kwargs:
-                axs_[k].axvline(
-                    x=cnt + kwargs[len_key],
-                    ls='-.',
-                    linewidth=1,
-                    color=length_colo[len_key],
-                    alpha=alpha_
-                )
+                axs_[k].axvline(x=cnt + kwargs[len_key],
+                                ls='-.',
+                                linewidth=1,
+                                color=length_colo[len_key],
+                                alpha=alpha_)
                 len_ = f"_[{len_key}:{kwargs[len_key]}]"
                 if not comment_p:
                     comment_p = comment + len_
                 else:
                     comment_p += len_
         # multiple length plot.
-        if (lengths_key in kwargs) and (cnt_key
-                                        in kwargs) and (sides_key in kwargs):
-            for l, c, s in zip(
-                kwargs[lengths_key], kwargs[cnt_key], kwargs[sides_key]
-            ):
+        if (lengths_key in kwargs) and (cnt_key in kwargs) and (sides_key
+                                                                in kwargs):
+            for l, c, s in zip(kwargs[lengths_key], kwargs[cnt_key],
+                               kwargs[sides_key]):
                 if side_[s] == k:
-                    axs_[k].axvline(
-                        x=c + l, ls='-.', linewidth=1, color='r', alpha=alpha_
-                    )
+                    axs_[k].axvline(x=c + l,
+                                    ls='-.',
+                                    linewidth=1,
+                                    color='r',
+                                    alpha=alpha_)
 
         if side == k:
             if not comment_p:
@@ -598,22 +583,20 @@ def save_figures(figure, fig_title, meas_bname_subfolder=True):
     pass
 
 
-def plot_echo_susp_at_cnt(
-    ut_echo,
-    susp_table,
-    meas_bname,
-    railheight=None,
-    cnt_type="ExternalCount",
-    **kwargs
-):
+def plot_echo_susp_at_cnt(ut_echo,
+                          susp_table,
+                          meas_bname,
+                          railheight=None,
+                          cnt_type="ExternalCount",
+                          **kwargs):
     all_in_one = False
     plot_data_block = True
     for i in range(susp_table.shape[0]):
         s = susp_table["Side"].iloc[i]
         side = side_[s]
         comment = "Suspect_" + meas_bname + "_" + susp_table["Comment"].iloc[
-            i] + "_Cla_" + susp_table["Classification"].astype(str).iloc[
-                i] + "_UIC_" + susp_table["UIC"].astype(str).iloc[i]
+            i] + "_Cla_" + susp_table["Classification"].astype(
+                str).iloc[i] + "_UIC_" + susp_table["UIC"].astype(str).iloc[i]
         # ipdb.set_trace()
         if all_in_one:
             kwargs.update({
@@ -634,48 +617,43 @@ def plot_echo_susp_at_cnt(
                 "show_all": False,
                 "plot_data_block": plot_data_block
             })
-        kwargs = plot_echo_at_cnt(
-            ut_echo,
-            susp_table[cnt_type].iloc[i],
-            side,
-            comment,
-            railheight,
-            cnt_type=cnt_type,
-            **kwargs
-        )
-        plot_data_block_at_cnt(
-            kwargs["data_block"],
-            susp_table[cnt_type].iloc[i],
-            side,
-            cnt_type=cnt_type,
-            **kwargs
-        )
+        kwargs = plot_echo_at_cnt(ut_echo,
+                                  susp_table[cnt_type].iloc[i],
+                                  side,
+                                  comment,
+                                  railheight,
+                                  cnt_type=cnt_type,
+                                  **kwargs)
+        plot_data_block_at_cnt(kwargs["data_block"],
+                               susp_table[cnt_type].iloc[i],
+                               side,
+                               cnt_type=cnt_type,
+                               **kwargs)
         plt.show()
-        pdb.set_trace()
         save_figures(kwargs["fig"], kwargs["fig_title"])
         plt.close(kwargs["fig"])
         if all_in_one:
             break
 
 
-def plot_echo_obj_at_cnt(
-    ut_echo, obj_table, meas_bname, railheight=None, cnt_type="ExternalCount"
-):
+def plot_echo_obj_at_cnt(ut_echo,
+                         obj_table,
+                         meas_bname,
+                         railheight=None,
+                         cnt_type="ExternalCount"):
     for i in range(obj_table.shape[0]):
         s = obj_table["Side"].iloc[i]
         side = side_[s]
         comment = "Object_" + meas_bname + "_" + obj_table["Type"].iloc[i]
-        plot_echo_at_cnt(
-            ut_echo,
-            obj_table[cnt_type].iloc[i],
-            side,
-            comment,
-            railheight,
-            cnt_type=cnt_type,
-            start_depth=obj_table["StartDepth"].iloc[i],
-            end_depth=obj_table["EndDepth"].iloc[i],
-            length=obj_table["Length"].loc[i]
-        )
+        plot_echo_at_cnt(ut_echo,
+                         obj_table[cnt_type].iloc[i],
+                         side,
+                         comment,
+                         railheight,
+                         cnt_type=cnt_type,
+                         start_depth=obj_table["StartDepth"].iloc[i],
+                         end_depth=obj_table["EndDepth"].iloc[i],
+                         length=obj_table["Length"].loc[i])
 
 
 def print_num_susp_or_obj(table):
@@ -764,18 +742,22 @@ def plot_all_susps(susp_table, side, axs_img, cnt_type="ExternalCount"):
             key_len = "Length"
             for cnt, l in zip(susp_t[cnt_type], susp_t[key_len]):
                 axs_img.axvline(cnt, linewidth=1, color='r', alpha=alpha_)
-                axs_img.axvline(
-                    cnt + l, ls='-.', linewidth=1, color='r', alpha=alpha_
-                )
+                axs_img.axvline(cnt + l,
+                                ls='-.',
+                                linewidth=1,
+                                color='r',
+                                alpha=alpha_)
         else:
             for cnt in susp_t[cnt_type]:
                 axs_img.axvline(cnt, linewidth=1, color='r', alpha=alpha_)
     return axs_img
 
 
-def plot_data_block_at_cnt(
-    df_dblock_lr, cnt, side, cnt_type="ExternalCount", **kwargs
-):
+def plot_data_block_at_cnt(df_dblock_lr,
+                           cnt,
+                           side,
+                           cnt_type="ExternalCount",
+                           **kwargs):
     """add the suspects position on the channels depth image representation for a region. (cnt_start, cnt_end)
 
     :param df_dblock_lr: 
@@ -793,9 +775,8 @@ def plot_data_block_at_cnt(
     axs_ = {'L': fig.get_axes()[2], 'R': fig.get_axes()[3]}
     cnt_start = kwargs["cnt_start"]
     cnt_end = kwargs["cnt_end"]
-    df_dblock_lr_ = get_data_block_cnt_lr(
-        df_dblock_lr, cnt_start, cnt_end, cnt_type
-    )
+    df_dblock_lr_ = get_data_block_cnt_lr(df_dblock_lr, cnt_start, cnt_end,
+                                          cnt_type)
     for k, dblock in df_dblock_lr_.items():
         # pdb.set_trace()
         columns = list(enumerate(dblock.keys()[2:], 1))
@@ -809,34 +790,32 @@ def plot_data_block_at_cnt(
         axs_[k].cla()
         # pdb.set_trace()
         dblock_ = dblock.fillna(255)
-        axs_[k].imshow(
-            dblock_.iloc[:, 2:].T,
-            aspect='auto',
-            norm=norm,
-            cmap='gray',
-            extent=[cnt_start, cnt_end, 10.5, 0.5],
-            interpolation='none'
-        )
-        pdb.set_trace()
+        axs_[k].imshow(dblock_.iloc[:, 2:].T,
+                       aspect='auto',
+                       norm=norm,
+                       cmap='gray',
+                       extent=[cnt_start, cnt_end, 10.5, 0.5],
+                       interpolation='none')
         if side == k:
             axs_[k].axvline(cnt, linewidth=1, color='r', alpha=alpha_)
             if len_key in kwargs:
-                axs_[k].axvline(
-                    cnt + kwargs[len_key],
-                    ls='-.',
-                    linewidth=1,
-                    color='r',
-                    alpha=alpha_
-                )
+                axs_[k].axvline(cnt + kwargs[len_key],
+                                ls='-.',
+                                linewidth=1,
+                                color='r',
+                                alpha=alpha_)
         else:
             axs_[k].axvline(cnt, linewidth=1, color='g', alpha=alpha_)
         axs_[k].set_title(axs_title)
         fig.canvas.draw()
 
 
-def plot_data_block_susp_at_cnt(
-    ut_img, susp_table, side, fig, axs_img, cnt_type="ExternalCount"
-):
+def plot_data_block_susp_at_cnt(ut_img,
+                                susp_table,
+                                side,
+                                fig,
+                                axs_img,
+                                cnt_type="ExternalCount"):
     """add the suspects position on the channels depth image representation for a region.
 
     :param susp_table: suspects table
@@ -862,22 +841,21 @@ def plot_data_block_susp_at_cnt(
             for cnt, l in zip(susp_t[cnt_type], susp_t[key_len]):
                 cnt_start = cnt - cnt_len / 2
                 cnt_end = cnt + cnt_len / 2
-                mask = np.logical_and(
-                    ut_img.index > cnt_start, ut_img.index < cnt_end
-                )
+                mask = np.logical_and(ut_img.index > cnt_start,
+                                      ut_img.index < cnt_end)
                 ut_img_ = ut_img[mask]
                 axs_img.cla()
-                axs_img.imshow(
-                    ut_img_.iloc[:, 4:].T,
-                    aspect='auto',
-                    norm=norm,
-                    cmap='jet',
-                    extent=[cnt_start, cnt_end, 10.5, 0.5]
-                )
+                axs_img.imshow(ut_img_.iloc[:, 4:].T,
+                               aspect='auto',
+                               norm=norm,
+                               cmap='jet',
+                               extent=[cnt_start, cnt_end, 10.5, 0.5])
                 axs_img.axvline(cnt, linewidth=1, color='r', alpha=alpha_)
-                axs_img.axvline(
-                    cnt + l, ls='-.', linewidth=1, color='r', alpha=alpha_
-                )
+                axs_img.axvline(cnt + l,
+                                ls='-.',
+                                linewidth=1,
+                                color='r',
+                                alpha=alpha_)
                 fig.canvas.draw()
         else:
             for cnt in susp_t[cnt_type]:
@@ -885,9 +863,10 @@ def plot_data_block_susp_at_cnt(
     return axs_img
 
 
-def get_data_block_cnt_lr(
-    df_data_lr, cnt_start=None, cnt_end=None, cnt_type="ExternalCount"
-):
+def get_data_block_cnt_lr(df_data_lr,
+                          cnt_start=None,
+                          cnt_end=None,
+                          cnt_type="ExternalCount"):
     """make the data block continuously on the cnt according to the cnt type.
     if not values for cnt_start and cnt_end, the whole run will be processed, this may take a lot of memory.
 
@@ -917,10 +896,15 @@ def get_data_block_cnt_lr(
     return df_dblock_lr
 
 
-def ut_echo_plot_2_rgb_array(
-    ut_echo, cnt, side, railheight=None, cnt_type="ExternalCount", **kwargs
-):
+def ut_echo_plot_2_rgb_array(ut_echo,
+                             cnt,
+                             side,
+                             railheight=None,
+                             cnt_type="ExternalCount",
+                             **kwargs):
     uic = kwargs.get("UIC")
+    classification = kwargs.get("Class")
+    padding = kwargs.get("padding")
     # only save the defects in the dict.
     if class_dict.get(uic) is None:
         return kwargs
@@ -941,46 +925,43 @@ def ut_echo_plot_2_rgb_array(
     if railheight is not None:
         ut_railh_lr = ut_split(railheight)
     echo = ut_echo_lr[side]
-    chan_conds, ut_echo_cond = mask_chans(
-        echo, ut_chans, cnt_start, cnt_end, False, cnt_type
-    )
+    chan_conds, ut_echo_cond = mask_chans(echo, ut_chans, cnt_start, cnt_end,
+                                          False, cnt_type)
     fs1, fs2 = cnt_end - cnt_start + 1, y_max - y_min + 1
     fig, axs = plt.subplots(figsize=(fs1 / 100, fs2 / 100))
     time_start = time.time()
     canvas = FigureCanvas(fig)
     # mask rail height data.
     if railheight is not None:
-        _, ut_railh_cond = mask_chans(
-            ut_railh_lr[side], ut_chans, cnt_start, cnt_end, True, cnt_type
-        )
+        _, ut_railh_cond = mask_chans(ut_railh_lr[side], ut_chans, cnt_start,
+                                      cnt_end, True, cnt_type)
         display_railh(axs, ut_railh_cond, cnt_type, legend=False)
-    display_echo(
-        axs, chan_conds, ut_chans, ut_echo_cond, cnt_type, legend=False
-    )
+    display_echo(axs,
+                 chan_conds,
+                 ut_chans,
+                 ut_echo_cond,
+                 cnt_type,
+                 legend=False)
     # plot depth.
     if False:
         for d_k in depth_colo.keys():
             if d_k in kwargs:
-                axs.axhline(
-                    y=-kwargs[d_k],
-                    ls='-.',
-                    linewidth=1,
-                    color=depth_colo[d_k],
-                    alpha=alpha_
-                )
+                axs.axhline(y=-kwargs[d_k],
+                            ls='-.',
+                            linewidth=1,
+                            color=depth_colo[d_k],
+                            alpha=alpha_)
     # plot length.
     if False:
         len_key = list(length_colo.keys())[0]
         if len_key in kwargs:
-            axs.vlines(
-                x=[cnt, cnt + kwargs[len_key]],
-                ymin=y_min,
-                ymax=y_max,
-                ls='-.',
-                linewidth=1,
-                color=length_colo[len_key],
-                alpha=alpha_
-            )
+            axs.vlines(x=[cnt, cnt + kwargs[len_key]],
+                       ymin=y_min,
+                       ymax=y_max,
+                       ls='-.',
+                       linewidth=1,
+                       color=length_colo[len_key],
+                       alpha=alpha_)
 
     axs.set_ylim(y_min, y_max)
     axs.set_xlim(cnt_start, cnt_end)
@@ -996,7 +977,8 @@ def ut_echo_plot_2_rgb_array(
     img = Image.fromarray(image)
     time_end = time.time()
     print(f"time to convert image -------{time_end-time_start}")
-    fig_title = f"{comment_cnt_type[cnt_type]}_{cnt}[{cnt_start}-{cnt_end}].jpg"
+    fig_title = (f"{comment_cnt_type[cnt_type]}_{cnt}[{cnt_start}-{cnt_end}]_"
+                 f"class_{classification}_uic_{uic}_s_{side__[side]}.jpg")
     type = kwargs.get('type')
     if kwargs.get(f"{type}_img_path"):
         img_path = kwargs.get(f"{type}_img_path")
@@ -1007,50 +989,70 @@ def ut_echo_plot_2_rgb_array(
         img_abspath = os.path.join(img_path, fig_title)
         img.save(img_abspath)
 
-    xmin, xmax, ymin, ymax = create_bbox(
-        cnt, cnt_start, cnt_end, y_min, y_max, **kwargs
-    )
+    xmin, xmax, ymin, ymax = create_bbox(cnt, cnt_start, cnt_end, y_min, y_max,
+                                         **kwargs)
+    kwargs.update({
+        "Side": side__[side],
+        "minX": xmin,
+        "minY": ymin,
+        "maxX": xmax,
+        "maxY": ymax,
+        "ImageWidth": image.shape[1],
+        "ImageHeight": image.shape[0],
+        "Count": int(cnt - padding),
+        "ImageName": fig_title,
+    })
+    # write annotation for each image.
+    a_name = os.path.splitext(fig_title)[0] + ".txt"
+    f_abs = os.path.join(img_path, a_name)
+    wf = open(f_abs, 'w')
+
     cla = class_dict.get(uic)
     class_id = class_ind_dict.get(cla)
-    write_annotation(
-        kwargs.get("wf"), os.path.abspath(img_abspath), str(xmin), str(ymin),
-        str(xmax), str(ymax), class_id
-    )
-    # pdb.set_trace()
+    write_annotation(wf,
+                     os.path.abspath(img_abspath),
+                     str(xmin),
+                     str(ymin),
+                     str(xmax),
+                     str(ymax),
+                     class_id,
+                     merged=False)
+    # write information to annotation csv file.
+    kwargs.update({"TypeId": class_id})
+    kwargs = write_anno_row(**kwargs)
+
+    wf.close()
     plt.close()
     return kwargs
 
 
-def plot_2_rgb_arrays(
-    ut_echo,
-    meas_name,
-    table=None,
-    railheight=None,
-    cnt_type="ExternalCount",
-    **kwargs
-):
+def plot_2_rgb_arrays(ut_echo,
+                      meas_name,
+                      table=None,
+                      railheight=None,
+                      cnt_type="ExternalCount",
+                      **kwargs):
     if table is not None:
         kwargs.update({
             "show_all": False,
-            "susp_img_path": "../img_src/susp_img",
-            "obj_img_path": "../img_src/obj_img",
             "meas_bname": meas_name,
             "meas_bname_subfolder": True,
             "padding": 15,
         })
-        a_path = kwargs.get("annotate_txt_path")
-        a_name = "bscan_" + kwargs.get("annotate_txt_name") + ".txt"
-        f_abs = os.path.join(a_path, a_name)
-        wf = open(f_abs, 'a+')
-        kwargs.update({"wf": wf})
+        csv_path = kwargs.get("csv_path")
+        csv_name = kwargs.get("csv_name")
+        csv_abs_path = os.path.join(csv_path, csv_name)
+        annotations_f = open(csv_abs_path, 'a+')
+        kwargs.update({"csv": annotations_f})
         for i in range(table.shape[0]):
             if kwargs.get("type") == "susp":
                 kwargs.update({"UIC": table["UIC"].iloc[i].astype(int)})
-                uic = kwargs.get("UIC")
-                cla = class_dict.get(uic)
-                class_id = class_ind_dict.get(cla)
-                if class_id != 4:
-                    continue
+                kwargs.update({"Class": int(table['Classification'].iloc[i])})
+                # uic = kwargs.get("UIC")
+                # cla = class_dict.get(uic)
+                # class_id = class_ind_dict.get(cla)
+                # if class_id != 4:
+                #     continue
 
             kwargs.update({
                 "start_depth": table["StartDepth"].iloc[i],
@@ -1059,10 +1061,9 @@ def plot_2_rgb_arrays(
             })
             s = table["Side"].iloc[i]
             side = side_[s]
-            kwargs = ut_echo_plot_2_rgb_array(
-                ut_echo, table[cnt_type].iloc[i], side, railheight, **kwargs
-            )
-        kwargs.get("wf").close()
+            kwargs = ut_echo_plot_2_rgb_array(ut_echo, table[cnt_type].iloc[i],
+                                              side, railheight, **kwargs)
+        kwargs.get("csv").close()
     # plot or save the whole run frame by frame.
     else:
         path = "../data"
@@ -1094,9 +1095,8 @@ def plot_2_rgb_arrays(
         side = 'L'
         pdb.set_trace()
         for i in range(table.shape[0]):
-            kwargs = ut_echo_plot_2_rgb_array(
-                ut_echo, table[cnt_type].iloc[i], side, railheight, **kwargs
-            )
+            kwargs = ut_echo_plot_2_rgb_array(ut_echo, table[cnt_type].iloc[i],
+                                              side, railheight, **kwargs)
         kwargs.get("wf").close()
 
 
@@ -1108,31 +1108,99 @@ def make_classes(uic):
     pass
 
 
-def write_annotation(wf, image_path, xmin, ymin, xmax, ymax, class_id):
-    annotation = image_path + ' ' + ','.join([
-        xmin, ymin, xmax, ymax, str(class_id)
-    ])
-    wf.write(annotation + '\n')
+def write_annotation(wf,
+                     image_path,
+                     xmin,
+                     ymin,
+                     xmax,
+                     ymax,
+                     class_id,
+                     merged=False):
+    if merged:
+        annotation = image_path + ' ' + ','.join(
+            [xmin, ymin, xmax, ymax, str(class_id)])
+        wf.write(annotation + '\n')
+    else:
+        annotation = ','.join([xmin, ymin, xmax, ymax, str(class_id)])
+        wf.write(annotation + '\n')
 
 
 def create_bbox(cnt, cnt_start, cnt_end, y_min, y_max, **kwargs):
     xmin = cnt - cnt_start
-    ymin = y_max + kwargs.get("end_depth")
+    ymin = y_max + kwargs.get("start_depth")
     xmax = xmin + kwargs.get("length")
-    ymax = y_max + kwargs.get("start_depth")
+    ymax = y_max + kwargs.get("end_depth")
     if kwargs.get("padding"):
         padding = kwargs.get("padding")
         xmin -= padding
-        ymin += padding
+        ymin -= padding
         xmax += padding
-        ymax -= padding
+        ymax += padding
     # recheck the bbox.
     if xmin < 0:
         xmin = 0
-    if ymin > y_max - y_min:
-        ymin = y_max - y_min
+    if ymax > y_max - y_min:
+        ymax = y_max - y_min
     if xmax > cnt_end - cnt_start:
         xmax = cnt_end - cnt_start
-    if ymax < 0:
-        ymax = 0
-    return xmin, xmax, ymin, ymax
+    if ymin < 0:
+        ymin = 0
+    return int(xmin), int(xmax), int(ymin), int(ymax)
+
+
+def get_meas_bname_folder(meas_bname, **kwargs):
+    if kwargs.get("type") == "susp":
+        p = kwargs.get("susp_img_path")
+    elif kwargs.get("type") == "obj":
+        p = kwargs.get("obj_img_path")
+    return os.path.join(p, meas_bname)
+
+
+def write_anno_row(**kwargs):
+    year = kwargs.get("meas_year")
+    date = kwargs.get("meas_date")
+    date = f"{date}"
+    meas_bname = kwargs.get("meas_bname")
+    img_name = kwargs.get("ImageName")
+    type_id = kwargs.get("TypeId")
+    Class = kwargs.get("Class")
+    UIC = kwargs.get("UIC")
+    Side = kwargs.get("Side")
+    img_w = kwargs.get("ImageWidth")
+    img_h = kwargs.get("ImageHeight")
+    cnt = kwargs.get("Count")
+    minX = kwargs.get("minX")
+    minY = kwargs.get("minY")
+    maxX = kwargs.get("maxX")
+    maxY = kwargs.get("maxY")
+    f = kwargs.get("csv")
+    row = [
+        year, date, meas_bname, img_name, type_id, Class, UIC, Side, img_w,
+        img_h, cnt, minX, minY, maxX, maxY
+    ]
+    csv_writer = csv.writer(f, delimiter=';')
+    csv_writer.writerow(row)
+    return kwargs
+
+
+def write_anno_header(f, type="susp"):
+    if type == "susp":
+        header = [
+            "MeasurementYear",
+            "MeasurementDate",
+            "MeasurementBname",
+            "ImageName",
+            "TypeId",
+            "Class",
+            "UIC",
+            "Side",
+            "ImageWidth",
+            "ImageHeight",
+            "ExternalCount",
+            "minX",
+            "minY",
+            "maxX",
+            "maxY"
+        ]
+        csv_writer = csv.writer(f, delimiter=';')
+        csv_writer.writerow(header)
