@@ -1,0 +1,12 @@
+pyyaml
+requests
+pillow
+opencv-python
+pandas
+matplotlib
+h5py
+scipy
+decorator
+atom
+sqlalchemy
+traitlets
