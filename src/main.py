@@ -25,12 +25,14 @@ if __name__ == "__main__":
         # "annotate_txt_path": "../data/",
         "type": type,
         "csv_path": "../annotations/",
-        "csv_name": "annotations.csv",
+        "csv_name": f"annotations_{type}.csv",
     })
     csv_path = kwargs.get("csv_path")
     csv_name = kwargs.get("csv_name")
-    csv_abs_path = os.path.join(csv_path, csv_name)
-    annotations_f = open(csv_abs_path, 'a+')
+    csv_f = os.path.join(csv_path, csv_name)
+    # if path not exists, create it first.
+    os.makedirs(os.path.dirname(csv_f), exist_ok=True)
+    annotations_f = open(csv_f, 'a+', newline='')
     bsc.write_anno_header(annotations_f, type=kwargs.get("type"))
     annotations_f.close()
 

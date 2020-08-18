@@ -1005,7 +1005,7 @@ def ut_echo_plot_2_rgb_array(ut_echo,
     # write annotation for each image.
     a_name = os.path.splitext(fig_title)[0] + ".txt"
     f_abs = os.path.join(img_path, a_name)
-    wf = open(f_abs, 'w')
+    wf = open(f_abs, 'w', newline='')
 
     cla = class_dict.get(uic)
     class_id = class_ind_dict.get(cla)
@@ -1042,7 +1042,7 @@ def plot_2_rgb_arrays(ut_echo,
         csv_path = kwargs.get("csv_path")
         csv_name = kwargs.get("csv_name")
         csv_abs_path = os.path.join(csv_path, csv_name)
-        annotations_f = open(csv_abs_path, 'a+')
+        annotations_f = open(csv_abs_path, 'a+', newline='')
         kwargs.update({"csv": annotations_f})
         for i in range(table.shape[0]):
             if kwargs.get("type") == "susp":
@@ -1186,21 +1186,15 @@ def write_anno_row(**kwargs):
 def write_anno_header(f, type="susp"):
     if type == "susp":
         header = [
-            "MeasurementYear",
-            "MeasurementDate",
-            "MeasurementBname",
-            "ImageName",
-            "TypeId",
-            "Class",
-            "UIC",
-            "Side",
-            "ImageWidth",
-            "ImageHeight",
-            "ExternalCount",
-            "minX",
-            "minY",
-            "maxX",
-            "maxY"
+            "MeasurementYear", "MeasurementDate", "MeasurementBname",
+            "ImageName", "TypeId", "Class", "UIC", "Side", "ImageWidth",
+            "ImageHeight", "ExternalCount", "minX", "minY", "maxX", "maxY"
         ]
         csv_writer = csv.writer(f, delimiter=';')
         csv_writer.writerow(header)
+    elif type == "obj":
+        header = [
+            "MeasurementYear", "MeasurementDate", "MeasurementBname",
+            "ImageName", "TypeId", "Type", "Side", "ImageWidth", "ImageHeight",
+            "ExternalCount", "minX", "minY", "maxX", "maxY"
+        ]
